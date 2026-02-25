@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  telegram-bot:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.telegram
+    container_name: chain-guard-telegram
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - RPC_ENDPOINT=${RPC_ENDPOINT}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - LOG_LEVEL=info
+    volumes:
+      - telegram-data:/app/data
+    networks:
+      - chain-guard-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api-server:
+    build:
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile.api
+    container_name: chain-guard-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - RPC_ENDPOINT=${RPC_ENDPOINT}
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=info
+    volumes:
+      - api-data:/app/data
+    networks:
+      - chain-guard-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: chain-guard-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - chain-guard-network
+    command: redis-server --appendonly yes
+
+  nginx:
+    image: nginx:alpine
+    container_name: chain-guard-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - chain-guard-network
+    depends_on:
+      - api-server
+
+volumes:
+  telegram-data:
+  api-data:
+  redis-data:
+
+networks:
+  chain-guard-network:
+    driver: bridge
