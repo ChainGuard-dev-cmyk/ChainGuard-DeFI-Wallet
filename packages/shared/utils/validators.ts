@@ -166,6 +166,25 @@ export class Validators {
 
     return { valid: true };
   }
+
+  static isValidHexString(hex: string): boolean {
+    return /^[0-9a-fA-F]+$/.test(hex) && hex.length % 2 === 0;
+  }
+
+  static validateBatchSize(size: number, maxSize: number = 100): {
+    valid: boolean;
+    error?: string;
+  } {
+    if (!Number.isInteger(size) || size <= 0) {
+      return { valid: false, error: 'Batch size must be a positive integer' };
+    }
+
+    if (size > maxSize) {
+      return { valid: false, error: `Batch size exceeds maximum of ${maxSize}` };
+    }
+
+    return { valid: true };
+  }
 }
 
 export default Validators;

@@ -60,6 +60,14 @@ export class RateLimiter {
     return entry.resetAt - Date.now();
   }
 
+  getStatus(key: string): { allowed: boolean; remaining: number; resetIn: number } {
+    const remaining = this.getRemainingRequests(key);
+    const resetIn = this.getResetTime(key);
+    const allowed = remaining > 0;
+
+    return { allowed, remaining, resetIn };
+  }
+
   reset(key: string): void {
     this.limits.delete(key);
   }

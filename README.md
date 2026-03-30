@@ -15,7 +15,7 @@
 
 **Real-time threat detection • Transaction analysis • Wallet protection**
 
-[Chrome Extension](https://chromewebstore.google.com/detail/kdfapkdbgfgopaakhkbogfhahklhbnlj) • [Telegram Bot](https://t.me/chainguardai_bot) • [Documentation](https://docs.chainguardai.dev/) • [Twitter](https://x.com/ChainGuardDFI)
+[Chrome Extension](https://chromewebstore.google.com/detail/kdfapkdbgfgopaakhkbogfhahklhbnlj) • [Telegram Bot](https://t.me/chainguardai_bot) • [Documentation](https://docs.chainguardai.dev/) • [Twitter](https://x.com/ChainGuardDefi)
 
 </div>
 
@@ -174,7 +174,7 @@ git push origin feature/amazing-feature
 
 ## 🌐 Community
 
-- **Twitter**: [@ChainGuardDFI](https://x.com/ChainGuardDFI)
+- **Twitter**: [@ChainGuardDefi](https://x.com/ChainGuardDefi)
 - **Telegram**: [@chainguardai_bot](https://t.me/chainguardai_bot)
 - **Chrome Extension**: [Install](https://chromewebstore.google.com/detail/kdfapkdbgfgopaakhkbogfhahklhbnlj)
 - **Email**: support@chainguard.io

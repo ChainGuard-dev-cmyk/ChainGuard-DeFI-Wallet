@@ -70,6 +70,28 @@ export class Cache<T> {
     this.cleanup();
     return Array.from(this.cache.keys());
   }
+
+  getOrSet(key: string, factory: () => T, ttl?: number): T {
+    const cached = this.get(key);
+    if (cached !== null) {
+      return cached;
+    }
+
+    const value = factory();
+    this.set(key, value, ttl);
+    return value;
+  }
+
+  async getOrSetAsync(key: string, factory: () => Promise<T>, ttl?: number): Promise<T> {
+    const cached = this.get(key);
+    if (cached !== null) {
+      return cached;
+    }
+
+    const value = await factory();
+    this.set(key, value, ttl);
+    return value;
+  }
 }
 
 export default Cache;
