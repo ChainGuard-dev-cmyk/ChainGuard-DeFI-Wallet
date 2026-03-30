@@ -204,4 +204,37 @@ export class ThreatDetector {
     // Update ML model with new patterns
     await this.mlModel.update();
   }
+
+  getBlacklistSize(): number {
+    return this.blacklistedAddresses.size;
+  }
+
+  getWhitelistSize(): number {
+    return this.whitelistedAddresses.size;
+  }
+
+  isBlacklisted(address: string): boolean {
+    return this.blacklistedAddresses.has(address);
+  }
+
+  isWhitelisted(address: string): boolean {
+    return this.whitelistedAddresses.has(address);
+  }
+
+  async batchAnalyze(transactions: Transaction[]): Promise<ThreatAnalysis[]> {
+    const analyses = await Promise.all(
+      transactions.map(tx => this.analyzeTransaction(tx))
+    );
+    return analyses;
+  }
+
+  setThreatThreshold(threshold: number): void {
+    if (threshold >= 0 && threshold <= 1) {
+      this.threatThreshold = threshold;
+    }
+  }
+
+  getThreatThreshold(): number {
+    return this.threatThreshold;
+  }
 }

@@ -171,6 +171,30 @@ export class Formatters {
   static formatDerivationPath(path: string): string {
     return path.replace(/'/g, 'ʰ');
   }
+
+  static formatHealthScore(score: number): string {
+    if (score >= 90) return '💚 Excellent';
+    if (score >= 70) return '💛 Good';
+    if (score >= 50) return '🧡 Fair';
+    return '❤️ Poor';
+  }
+
+  static formatTransactionFee(fee: number, includeUsd?: number): string {
+    const solFee = this.formatSolAmount(fee);
+    if (includeUsd) {
+      const usdFee = this.formatUsd(includeUsd);
+      return `${solFee} SOL (${usdFee})`;
+    }
+    return `${solFee} SOL`;
+  }
+
+  static formatValidatorCommission(commission: number): string {
+    return `${commission.toFixed(2)}%`;
+  }
+
+  static formatStakeAmount(amount: number): string {
+    return `${this.formatSolAmount(amount)} SOL`;
+  }
 }
 
 export default Formatters;

@@ -92,4 +92,41 @@ export class TransactionBuilder {
     const baseFee = 5000;
     return baseFee * signatureCount;
   }
+
+  getInstructionCount(): number {
+    return this.instructions.length;
+  }
+
+  addMemo(memo: string): this {
+    const memoInstruction = new TransactionInstruction({
+      keys: [],
+      programId: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
+      data: Buffer.from(memo, 'utf8')
+    });
+
+    this.instructions.push(memoInstruction);
+    return this;
+  }
+
+  setPriorityFee(microLamports: number): this {
+    const priorityFeeInstruction = new TransactionInstruction({
+      keys: [],
+      programId: new PublicKey('ComputeBudget111111111111111111111111111111'),
+      data: Buffer.from([3, ...new Uint8Array(new BigUint64Array([BigInt(microLamports)]).buffer)])
+    });
+
+    this.instructions.unshift(priorityFeeInstruction);
+    return this;
+  }
+
+  setComputeUnitLimit(units: number): this {
+    const computeUnitInstruction = new TransactionInstruction({
+      keys: [],
+      programId: new PublicKey('ComputeBudget111111111111111111111111111111'),
+      data: Buffer.from([2, ...new Uint8Array(new Uint32Array([units]).buffer)])
+    });
+
+    this.instructions.unshift(computeUnitInstruction);
+    return this;
+  }
 }

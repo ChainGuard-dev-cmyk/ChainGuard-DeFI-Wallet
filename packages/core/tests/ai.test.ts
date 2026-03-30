@@ -122,4 +122,141 @@ describe('MLModel', () => {
       await expect(model.update()).resolves.not.toThrow();
     });
   });
+
+  describe('batch prediction', () => {
+    it('should handle batch predictions efficiently', async () => {
+      const features = [
+        {
+          amount: 1000000,
+          recipientAge: 30,
+          programInteractions: 2,
+          gasPrice: 5000,
+          complexity: 50,
+          knownAddress: false
+        },
+        {
+          amount: 500000,
+          recipientAge: 60,
+          programInteractions: 1,
+          gasPrice: 3000,
+          complexity: 25,
+          knownAddress: true
+        }
+      ];
+
+      const predictions = await Promise.all(
+        features.map(f => model.predict(f))
+      );
+
+      expect(predictions).toHaveLength(2);
+      predictions.forEach(prediction => {
+        expect(prediction.score).toBeGreaterThanOrEqual(0);
+        expect(prediction.score).toBeLessThanOrEqual(1);
+      });
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle zero amount transactions', async () => {
+      const features = {
+        amount: 0,
+        recipientAge: 30,
+        programInteractions: 1,
+        gasPrice: 5000,
+        complexity: 10,
+        knownAddress: true
+      };
+
+      const prediction = await model.predict(features);
+      expect(prediction.score).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should handle very large amounts', async () => {
+      const features = {
+        amount: Number.MAX_SAFE_INTEGER,
+        recipientAge: 1,
+        programInteractions: 20,
+        gasPrice: 100000,
+        complexity: 1000,
+        knownAddress: false
+      };
+
+      const prediction = await model.predict(features);
+      expect(prediction.score).toBeGreaterThan(0.5);
+    });
+  });
+});
+
+describe('ThreatDetector Advanced Features', () => {
+  let detector: ThreatDetector;
+
+  beforeEach(() => {
+    detector = new ThreatDetector();
+  });
+
+  describe('batch analysis', () => {
+    it('should analyze multiple transactions efficiently', async () => {
+      const transactions = Array(5).fill({
+        instructions: [],
+        recentBlockhash: 'test-blockhash',
+        feePayer: null
+      });
+
+      const analyses = await detector.batchAnalyze(transactions as any);
+
+      expect(analyses).toHaveLength(5);
+      analyses.forEach(analysis => {
+        expect(analysis.riskScore).toBeGreaterThanOrEqual(0);
+        expect(analysis.riskScore).toBeLessThanOrEqual(1);
+      });
+    });
+  });
+
+  describe('threshold management', () => {
+    it('should allow setting custom threat threshold', () => {
+      detector.setThreatThreshold(0.8);
+      expect(detector.getThreatThreshold()).toBe(0.8);
+    });
+
+    it('should reject invalid threshold values', () => {
+      const originalThreshold = detector.getThreatThreshold();
+      
+      detector.setThreatThreshold(-0.1);
+      expect(detector.getThreatThreshold()).toBe(originalThreshold);
+      
+      detector.setThreatThreshold(1.5);
+      expect(detector.getThreatThreshold()).toBe(originalThreshold);
+    });
+  });
+
+  describe('blacklist and whitelist management', () => {
+    it('should track blacklist size', async () => {
+      const initialSize = detector.getBlacklistSize();
+      
+      await detector.addToBlacklist('test-address-1');
+      expect(detector.getBlacklistSize()).toBe(initialSize + 1);
+      
+      await detector.addToBlacklist('test-address-2');
+      expect(detector.getBlacklistSize()).toBe(initialSize + 2);
+    });
+
+    it('should check if address is blacklisted', async () => {
+      const testAddress = 'test-blacklisted-address';
+      
+      expect(detector.isBlacklisted(testAddress)).toBe(false);
+      
+      await detector.addToBlacklist(testAddress);
+      expect(detector.isBlacklisted(testAddress)).toBe(true);
+    });
+
+    it('should manage whitelist correctly', async () => {
+      const testAddress = 'test-whitelisted-address';
+      
+      expect(detector.isWhitelisted(testAddress)).toBe(false);
+      
+      await detector.addToWhitelist(testAddress);
+      expect(detector.isWhitelisted(testAddress)).toBe(true);
+      expect(detector.getWhitelistSize()).toBeGreaterThan(0);
+    });
+  });
 });
