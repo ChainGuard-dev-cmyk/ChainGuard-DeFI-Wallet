@@ -93,19 +93,59 @@ export class KeyManager {
 
   private async persistToSecureStorage(key: string, data: StoredKey): Promise<void> {
     // Platform-specific implementation
-    // For browser: IndexedDB with encryption
+    // For browser: use chrome.storage.local (extension-sandboxed, not accessible to page JS)
     // For Node: OS keychain integration
     const serialized = JSON.stringify(data);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`chain_guard_${key}`, serialized);
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      await chrome.storage.local.set({ [`chain_guard_${key}`]: serialized });
+    } else if (typeof window !== 'undefined' && window.indexedDB) {
+      // Fallback: IndexedDB is preferable to localStorage for sensitive data
+      // as it is not synchronously accessible and supports structured cloning
+      const request = window.indexedDB.open('chain_guard_keys', 1);
+      await new Promise<void>((resolve, reject) => {
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains('keys')) {
+            db.createObjectStore('keys');
+          }
+        };
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction('keys', 'readwrite');
+          tx.objectStore('keys').put(serialized, key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        };
+        request.onerror = () => reject(request.error);
+      });
     }
   }
 
   private async loadFromSecureStorage(key: string): Promise<StoredKey | null> {
-    // Platform-specific implementation
-    if (typeof window !== 'undefined') {
-      const data = localStorage.getItem(`chain_guard_${key}`);
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      const result = await chrome.storage.local.get(`chain_guard_${key}`);
+      const data = result[`chain_guard_${key}`];
       return data ? JSON.parse(data) : null;
+    } else if (typeof window !== 'undefined' && window.indexedDB) {
+      return new Promise((resolve, reject) => {
+        const request = window.indexedDB.open('chain_guard_keys', 1);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains('keys')) {
+            db.createObjectStore('keys');
+          }
+        };
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction('keys', 'readonly');
+          const getReq = tx.objectStore('keys').get(key);
+          getReq.onsuccess = () => {
+            resolve(getReq.result ? JSON.parse(getReq.result) : null);
+          };
+          getReq.onerror = () => reject(getReq.error);
+        };
+        request.onerror = () => reject(request.error);
+      });
     }
     return null;
   }

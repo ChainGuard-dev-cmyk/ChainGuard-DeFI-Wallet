@@ -225,7 +225,10 @@ Need help? Contact @chainguard_support
   }
 
   private logMessage(msg: any): void {
-    console.log(`[${new Date().toISOString()}] User ${msg.from?.id}: ${msg.text}`);
+    // Only log the command portion, not full message text which may contain sensitive data (seed phrases, passwords)
+    const text = msg.text || '';
+    const command = text.startsWith('/') ? text.split(' ')[0] : '[non-command]';
+    console.log(`[${new Date().toISOString()}] User ${msg.from?.id}: ${command}`);
   }
 
   public start(): void {
@@ -248,6 +251,11 @@ const config: BotConfig = {
 
 if (!config.token) {
   console.error('TELEGRAM_BOT_TOKEN environment variable is required');
+  process.exit(1);
+}
+
+if (!config.encryptionKey) {
+  console.error('ENCRYPTION_KEY environment variable is required');
   process.exit(1);
 }
 

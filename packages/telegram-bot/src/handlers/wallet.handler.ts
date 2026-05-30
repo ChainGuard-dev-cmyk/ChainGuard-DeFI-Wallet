@@ -271,9 +271,11 @@ Click below to confirm you've saved it.
 
   private generateSecurePassword(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    const crypto = require('crypto');
+    const randomBytes = crypto.randomBytes(32);
     let password = '';
     for (let i = 0; i < 32; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+      password += chars.charAt(randomBytes[i] % chars.length);
     }
     return password;
   }
