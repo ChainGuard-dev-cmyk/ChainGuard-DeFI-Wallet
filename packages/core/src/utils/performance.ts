@@ -129,7 +129,7 @@ export function measure(target: unknown, propertyKey: string, descriptor: Proper
 
   descriptor.value = async function (...args: unknown[]) {
     const monitor = new PerformanceMonitor();
-    const operationName = `${target.constructor.name}.${propertyKey}`;
+    const operationName = `${(target as { constructor: { name: string } }).constructor.name}.${propertyKey}`;
     
     monitor.start(operationName);
     try {
@@ -150,3 +150,33 @@ export function measure(target: unknown, propertyKey: string, descriptor: Proper
  * Global performance monitor instance
  */
 export const globalMonitor = new PerformanceMonitor();
+
+/**
+ * Decorator that tracks method performance via the global monitor.
+ * Records metrics on the globalMonitor instance so they persist
+ * and can be queried/exported after execution.
+ */
+export function trackPerformance(
+  target: unknown,
+  propertyKey: string,
+  descriptor: PropertyDescriptor
+): PropertyDescriptor {
+  const originalMethod = descriptor.value;
+
+  descriptor.value = async function (...args: unknown[]) {
+    const operationName = `${(target as { constructor: { name: string } }).constructor.name}.${propertyKey}`;
+
+    globalMonitor.start(operationName);
+    try {
+      const result = await originalMethod.apply(this, args);
+      const duration = globalMonitor.end(operationName);
+      console.log(`[Performance] ${operationName}: ${duration.toFixed(2)}ms`);
+      return result;
+    } catch (error) {
+      globalMonitor.end(operationName);
+      throw error;
+    }
+  };
+
+  return descriptor;
+}

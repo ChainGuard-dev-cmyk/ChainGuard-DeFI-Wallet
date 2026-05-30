@@ -1,5 +1,6 @@
 import { Transaction, PublicKey } from '@solana/web3.js';
 import { MLModel, PredictionResult } from './ml-model';
+import { trackPerformance } from '../utils/performance';
 
 export interface ThreatAnalysis {
   riskScore: number;
@@ -42,6 +43,7 @@ export class ThreatDetector {
     this.loadBlacklist();
   }
 
+  @trackPerformance
   async analyzeTransaction(transaction: Transaction): Promise<ThreatAnalysis> {
     const features = await this.extractFeatures(transaction);
     const mlPrediction = await this.mlModel.predict(features);
