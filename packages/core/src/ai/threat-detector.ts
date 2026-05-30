@@ -49,6 +49,9 @@ export class ThreatDetector {
     const threats: ThreatType[] = [];
     let riskScore = mlPrediction.score;
 
+    // Skip additional threat checks for whitelisted addresses
+    const isWhitelisted = this.containsWhitelistedAddress(transaction);
+
     // Check blacklisted addresses
     if (this.containsBlacklistedAddress(transaction)) {
       threats.push(ThreatType.MALICIOUS_CONTRACT);
@@ -61,7 +64,7 @@ export class ThreatDetector {
       riskScore += 0.2;
     }
 
-    if (!features.knownAddress && features.recipientAge < 7) {
+    if (!isWhitelisted && !features.knownAddress && features.recipientAge < 7) {
       threats.push(ThreatType.UNKNOWN_RECIPIENT);
       riskScore += 0.15;
     }
@@ -111,7 +114,7 @@ export class ThreatDetector {
     const instructionCount = transaction.instructions.length;
     const accountCount = new Set(
       transaction.instructions.flatMap(ix => 
-        ix.keys.map(k => k.pubkey.toString())
+        (ix.keys || []).map((k: { pubkey: { toString(): string } }) => k.pubkey.toString())
       )
     ).size;
 
@@ -127,6 +130,22 @@ export class ThreatDetector {
 
       for (const key of instruction.keys) {
         if (this.blacklistedAddresses.has(key.pubkey.toString())) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private containsWhitelistedAddress(transaction: Transaction): boolean {
+    for (const instruction of transaction.instructions) {
+      const programId = instruction.programId.toString();
+      if (this.whitelistedAddresses.has(programId)) {
+        return true;
+      }
+
+      for (const key of instruction.keys) {
+        if (this.whitelistedAddresses.has(key.pubkey.toString())) {
           return true;
         }
       }

@@ -26,8 +26,13 @@ describe('ThreatDetector', () => {
     });
 
     it('should detect high risk transactions', async () => {
+      const mockInstruction = {
+        programId: { toString: () => 'unknown-program' },
+        keys: [],
+        data: Buffer.alloc(0)
+      };
       const mockTransaction = {
-        instructions: Array(10).fill({}),
+        instructions: Array(10).fill(mockInstruction),
         recentBlockhash: 'test-blockhash',
         feePayer: null
       };
@@ -258,5 +263,93 @@ describe('ThreatDetector Advanced Features', () => {
       expect(detector.isWhitelisted(testAddress)).toBe(true);
       expect(detector.getWhitelistSize()).toBeGreaterThan(0);
     });
+  });
+});
+
+describe('ThreatDetector Transaction Analysis - Blacklist vs Whitelist', () => {
+  let detector: ThreatDetector;
+
+  beforeEach(() => {
+    detector = new ThreatDetector();
+  });
+
+  it('should flag a transaction to a blacklisted address as high-risk', async () => {
+    const blacklistedAddr = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
+
+    const mockTransaction = {
+      instructions: [
+        {
+          programId: { toString: () => 'system-program' },
+          keys: [
+            { pubkey: { toString: () => blacklistedAddr }, isSigner: false, isWritable: true }
+          ],
+          data: Buffer.alloc(0)
+        }
+      ],
+      recentBlockhash: 'test-blockhash',
+      feePayer: null
+    };
+
+    expect(detector.isBlacklisted(blacklistedAddr)).toBe(true);
+
+    const analysis = await detector.analyzeTransaction(mockTransaction as any);
+
+    expect(analysis.riskScore).toBeGreaterThanOrEqual(0.95);
+    expect(analysis.threats).toContain(ThreatType.MALICIOUS_CONTRACT);
+    expect(analysis.recommendations).toContain(
+      'CRITICAL: Do not proceed with this transaction'
+    );
+  });
+
+  it('should NOT flag a transaction to a whitelisted address as high-risk', async () => {
+    const whitelistedAddr = 'WhiteListed111111111111111111111111111111111';
+    await detector.addToWhitelist(whitelistedAddr);
+
+    const mockTransaction = {
+      instructions: [
+        {
+          programId: { toString: () => 'system-program' },
+          keys: [
+            { pubkey: { toString: () => whitelistedAddr }, isSigner: false, isWritable: true }
+          ],
+          data: Buffer.alloc(0)
+        }
+      ],
+      recentBlockhash: 'test-blockhash',
+      feePayer: null
+    };
+
+    expect(detector.isWhitelisted(whitelistedAddr)).toBe(true);
+    expect(detector.isBlacklisted(whitelistedAddr)).toBe(false);
+
+    const analysis = await detector.analyzeTransaction(mockTransaction as any);
+
+    expect(analysis.threats).not.toContain(ThreatType.MALICIOUS_CONTRACT);
+    expect(analysis.threats).not.toContain(ThreatType.UNKNOWN_RECIPIENT);
+    expect(analysis.riskScore).toBeLessThan(0.7);
+  });
+
+  it('should still flag a blacklisted address even if also whitelisted', async () => {
+    const addr = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
+    await detector.addToWhitelist(addr);
+
+    const mockTransaction = {
+      instructions: [
+        {
+          programId: { toString: () => 'system-program' },
+          keys: [
+            { pubkey: { toString: () => addr }, isSigner: false, isWritable: true }
+          ],
+          data: Buffer.alloc(0)
+        }
+      ],
+      recentBlockhash: 'test-blockhash',
+      feePayer: null
+    };
+
+    const analysis = await detector.analyzeTransaction(mockTransaction as any);
+
+    expect(analysis.threats).toContain(ThreatType.MALICIOUS_CONTRACT);
+    expect(analysis.riskScore).toBeGreaterThanOrEqual(0.95);
   });
 });
