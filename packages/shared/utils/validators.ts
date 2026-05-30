@@ -84,7 +84,12 @@ export class Validators {
   }
 
   static sanitizeInput(input: string): string {
-    return input.trim().replace(/[<>]/g, '');
+    return input
+      .trim()
+      .replace(/[<>"'&;(){}[\]\\]/g, '')
+      .replace(/javascript:/gi, '')
+      .replace(/data:/gi, '')
+      .replace(/on\w+=/gi, '');
   }
 
   static validateTransactionAmount(amount: number, balance: number): {

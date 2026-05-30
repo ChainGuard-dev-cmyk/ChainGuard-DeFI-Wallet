@@ -113,7 +113,7 @@ class ChainGuardInjector {
           params,
           origin: window.location.origin
         }
-      }, '*');
+      }, window.location.origin);
 
       // Timeout after 60 seconds
       setTimeout(() => {
@@ -128,6 +128,7 @@ class ChainGuardInjector {
   private setupMessageListener(): void {
     window.addEventListener('message', (event) => {
       if (event.source !== window) return;
+      if (event.origin !== window.location.origin) return;
 
       const message = event.data;
 

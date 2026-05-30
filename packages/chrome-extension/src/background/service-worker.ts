@@ -261,11 +261,17 @@ class ServiceWorker {
   }
 
   private generateWalletId(): string {
-    return `wallet_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    const hex = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `wallet_${Date.now()}_${hex}`;
   }
 
   private generateId(): string {
-    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    const hex = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `${Date.now()}_${hex}`;
   }
 
   private async performHealthCheck(): Promise<void> {

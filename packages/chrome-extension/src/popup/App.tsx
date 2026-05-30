@@ -58,9 +58,16 @@ const App: React.FC = () => {
     setWallet(prev => ({ ...prev, loading: true }));
     
     try {
+      // Prompt user for password instead of using a hardcoded value
+      const password = window.prompt('Set a password for your new wallet:');
+      if (!password || password.length < 8) {
+        setWallet(prev => ({ ...prev, loading: false }));
+        return;
+      }
+
       const response = await chrome.runtime.sendMessage({
         type: 'CREATE_WALLET',
-        data: { password: 'temp_password' }
+        data: { password }
       });
 
       if (response.success) {
